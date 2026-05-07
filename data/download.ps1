@@ -36,7 +36,12 @@ foreach ($dataset in $manifest.datasets) {
         }
 
         Write-Host "Downloading $($file.url)"
-        Invoke-WebRequest -Uri $file.url -OutFile $target
+        try {
+            Invoke-WebRequest -Uri $file.url -OutFile $target -ErrorAction Stop
+        } catch {
+            Write-Warning "Failed to download $($file.url): $($_.Exception.Message)"
+            if (Test-Path $target) { Remove-Item $target -Force }
+        }
     }
 }
 
