@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: cobol-archaeologist-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: DATA_DIR
+        value: /app/data
+      - key: PORT
+        value: 8000
+    healthCheckPath: /health
+    autoDeploy: true

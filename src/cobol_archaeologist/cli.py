@@ -83,6 +83,8 @@ def cmd_infer(args: argparse.Namespace) -> None:
         for line in fh:
             if not line.strip():
                 continue
+            if args.limit is not None and n >= args.limit:
+                break
             block = LogicBlock.model_validate(json.loads(line))
             retrieved = []
             if index is not None and embedder is not None:
@@ -142,6 +144,7 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--index-dir", default=None)
     s.add_argument("-k", type=int, default=3)
     s.add_argument("--offline", action="store_true")
+    s.add_argument("--limit", type=int, default=None, help="Process only the first N blocks.")
     s.set_defaults(func=cmd_infer)
 
     s = sub.add_parser("eval", help="Evaluate against a golden JSONL file.")

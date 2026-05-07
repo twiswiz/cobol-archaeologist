@@ -26,6 +26,10 @@ model = [
     "torch>=2.2",
     "requests>=2.31",
 ]
+api = [
+    "fastapi>=0.111",
+    "uvicorn[standard]>=0.29",
+]
 dev = [
     "pytest>=8.0",
     "ruff>=0.4",
