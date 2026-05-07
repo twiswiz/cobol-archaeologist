@@ -1,0 +1,5 @@
+raw/
+generated/
+*.zip
+*.tar.gz
+*.pdf

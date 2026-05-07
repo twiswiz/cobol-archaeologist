@@ -1,0 +1,124 @@
+{
+  "datasets": [
+    {
+      "id": "x-cobol",
+      "name": "X-COBOL: A Dataset of Open-Source COBOL repositories",
+      "type": "General COBOL code corpus",
+      "source": "https://zenodo.org/records/14269462",
+      "license": "CC-BY-4.0",
+      "files": [
+        {
+          "filename": "COBOL_Files.zip",
+          "url": "https://zenodo.org/records/14269462/files/COBOL_Files.zip?download=1"
+        },
+        {
+          "filename": "commits_data.csv",
+          "url": "https://zenodo.org/records/14269462/files/commits_data.csv?download=1"
+        },
+        {
+          "filename": "file_stats.csv",
+          "url": "https://zenodo.org/records/14269462/files/file_stats.csv?download=1"
+        },
+        {
+          "filename": "final_repo_statistics.csv",
+          "url": "https://zenodo.org/records/14269462/files/final_repo_statistics.csv?download=1"
+        },
+        {
+          "filename": "pull_request_comments_data.csv",
+          "url": "https://zenodo.org/records/14269462/files/pull_request_comments_data.csv?download=1"
+        },
+        {
+          "filename": "repo_code_statistics.csv",
+          "url": "https://zenodo.org/records/14269462/files/repo_code_statistics.csv?download=1"
+        }
+      ]
+    },
+    {
+      "id": "ibm-project-codenet",
+      "name": "IBM Project CodeNet",
+      "type": "General programming dataset",
+      "source": "https://github.com/IBM/Project_CodeNet",
+      "large": true,
+      "files": [
+        {
+          "filename": "Project_CodeNet.tar.gz",
+          "url": "https://dax-cdn.cdn.appdomain.cloud/dax-project-codenet/1.0.0/Project_CodeNet.tar.gz"
+        }
+      ]
+    },
+    {
+      "id": "ibm-project-codenet-mini",
+      "name": "Mini Project CodeNet",
+      "type": "Small structural sample of Project CodeNet",
+      "source": "https://dax-cdn.cdn.appdomain.cloud/dax-project-codenet/1.0.0/readme.html",
+      "files": [
+        {
+          "filename": "Mini_Project_CodeNet.tar.gz",
+          "url": "https://dax-cdn.cdn.appdomain.cloud/dax-project-codenet/1.0.0/Mini_Project_CodeNet.tar.gz"
+        }
+      ]
+    },
+    {
+      "id": "ibm-cics-banking-sample-cbsa",
+      "name": "IBM CICS Banking Sample Application / CBSA",
+      "type": "Banking COBOL application",
+      "source": "https://github.com/cicsdev/cics-banking-sample-application-cbsa",
+      "license": "EPL-2.0",
+      "files": [
+        {
+          "filename": "cics-banking-sample-application-cbsa-main.zip",
+          "url": "https://github.com/cicsdev/cics-banking-sample-application-cbsa/archive/refs/heads/main.zip"
+        }
+      ]
+    },
+    {
+      "id": "aws-mainframe-modernization-carddemo",
+      "name": "AWS Mainframe Modernization CardDemo",
+      "type": "Credit-card COBOL application",
+      "source": "https://github.com/aws-samples/aws-mainframe-modernization-carddemo",
+      "license": "Apache-2.0",
+      "files": [
+        {
+          "filename": "aws-mainframe-modernization-carddemo-main.zip",
+          "url": "https://github.com/aws-samples/aws-mainframe-modernization-carddemo/archive/refs/heads/main.zip"
+        }
+      ]
+    },
+    {
+      "id": "rbi-kyc-master-direction",
+      "name": "RBI Master Direction - Know Your Customer (KYC) Direction, 2016",
+      "type": "Financial regulation corpus",
+      "source": "https://rbi.org.in/scripts/notificationuser.aspx?id=11566",
+      "files": [
+        {
+          "filename": "RBI-Master-Direction-KYC.pdf",
+          "url": "https://rbidocs.rbi.org.in/rdocs/notification/PDFs/MD18KYCF6E92C82E1E1419D87323E3869BC9F13.PDF"
+        }
+      ]
+    },
+    {
+      "id": "basel-iii-framework",
+      "name": "Basel III: A global regulatory framework for more resilient banks and banking systems",
+      "type": "Banking regulation corpus",
+      "source": "https://www.bis.org/publ/bcbs189.htm",
+      "files": [
+        {
+          "filename": "basel-iii-bcbs189.pdf",
+          "url": "https://www.bis.org/publ/bcbs189.pdf"
+        }
+      ]
+    },
+    {
+      "id": "generated-cobol-logic-blocks",
+      "name": "Generated COBOL Logic-Block Dataset",
+      "type": "Processed dataset",
+      "local_generator": "scripts/generate_synthetic_datasets.py"
+    },
+    {
+      "id": "business-intent-cards",
+      "name": "Business Intent Card Dataset",
+      "type": "Instruction-tuning / evaluation dataset",
+      "local_generator": "scripts/generate_synthetic_datasets.py"
+    }
+  ]
+}
