@@ -1,0 +1,18 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.env
+.pytest_cache/
+.ruff_cache/
+build/
+dist/
+
+# Data artifacts
+data/raw/
+data/processed/
+data/index/
+data/generated/
+
+# Reports
+reports/

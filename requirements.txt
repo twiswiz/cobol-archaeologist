@@ -1,0 +1,16 @@
+pydantic>=2.5
+lark>=1.1
+tqdm>=4.66
+pypdf>=4.0
+numpy>=1.26
+pandas>=2.1
+# RAG (optional)
+sentence-transformers>=2.7
+faiss-cpu>=1.7
+# Model backends (optional)
+transformers>=4.40
+torch>=2.2
+requests>=2.31
+# Dev
+pytest>=8.0
+ruff>=0.4

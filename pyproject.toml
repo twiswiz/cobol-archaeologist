@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cobol-archaeologist"
+version = "0.1.0"
+description = "Recover business intent from undocumented COBOL programs."
+requires-python = ">=3.10"
+dependencies = [
+    "pydantic>=2.5",
+    "lark>=1.1",
+    "tqdm>=4.66",
+    "pypdf>=4.0",
+    "numpy>=1.26",
+    "pandas>=2.1",
+]
+
+[project.optional-dependencies]
+rag = [
+    "sentence-transformers>=2.7",
+    "faiss-cpu>=1.7",
+]
+model = [
+    "transformers>=4.40",
+    "torch>=2.2",
+    "requests>=2.31",
+]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.4",
+]
+
+[project.scripts]
+cobol-archaeologist = "cobol_archaeologist.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
