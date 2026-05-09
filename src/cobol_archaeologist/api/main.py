@@ -217,8 +217,8 @@ def infer_block(block_id: str, req: InferRequest = InferRequest()):
     if INDEX_DIR.exists():
         try:
             embedder = get_embedder(prefer_st=False)
-            idx = RegulationIndex.load(str(INDEX_DIR))
-            query_vec = embedder.embed([block.paragraph])[0]
+            idx = RegulationIndex.load(INDEX_DIR)
+            query_vec = embedder.encode([block.paragraph])[0]
             hits = idx.search(query_vec, k=3)
             retrieved = [h.chunk for h in hits]
         except Exception:
@@ -251,8 +251,8 @@ def search_regulations(
     from cobol_archaeologist.rag.index import RegulationIndex
 
     embedder = get_embedder(prefer_st=False)
-    idx = RegulationIndex.load(str(INDEX_DIR))
-    query_vec = embedder.embed([q])[0]
+    idx = RegulationIndex.load(INDEX_DIR)
+    query_vec = embedder.encode([q])[0]
     hits = idx.search(query_vec, k=k)
 
     return [
