@@ -10,9 +10,6 @@ dist/
 
 # Data artifacts
 data/raw/
-data/processed/
-data/index/
 data/generated/
 
-# Reports
-reports/
+# Keep processed, index, and reports — needed for Docker/Render build

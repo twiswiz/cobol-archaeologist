@@ -1,0 +1,2 @@
+path,rel_path,size_bytes,lines,is_copybook
+tests\fixtures\sample.cbl,sample.cbl,822,23,False
