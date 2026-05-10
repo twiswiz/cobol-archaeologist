@@ -224,7 +224,14 @@ def infer_block(block_id: str, req: InferRequest = InferRequest()):
         except Exception:
             retrieved = []
 
-    card = generate_card(block, backend, retrieved)
+    try:
+        card = generate_card(block, backend, retrieved)
+    except Exception as e:
+        import traceback
+        raise HTTPException(
+            status_code=502,
+            detail=f"Backend '{req.backend}' failed: {type(e).__name__}: {e}",
+        )
     if card is None:
         raise HTTPException(status_code=500, detail="Model failed to produce a valid card")
 
@@ -247,13 +254,21 @@ def search_regulations(
     if not INDEX_DIR.exists():
         raise HTTPException(status_code=503, detail="Regulation index not built yet")
 
-    from cobol_archaeologist.rag.embed import get_embedder
-    from cobol_archaeologist.rag.index import RegulationIndex
+    try:
+        from cobol_archaeologist.rag.embed import get_embedder
+        from cobol_archaeologist.rag.index import RegulationIndex
 
-    embedder = get_embedder(prefer_st=False)
-    idx = RegulationIndex.load(INDEX_DIR)
-    query_vec = embedder.encode([q])[0]
-    hits = idx.search(query_vec, k=k)
+        embedder = get_embedder(prefer_st=False)
+        idx = RegulationIndex.load(INDEX_DIR)
+        query_vec = embedder.encode([q])[0]
+        hits = idx.search(query_vec, k=k)
+    except Exception as e:
+        import traceback
+        tb = traceback.format_exc()
+        raise HTTPException(
+            status_code=500,
+            detail=f"{type(e).__name__}: {e}\n{tb}",
+        )
 
     return [
         RegSearchHit(
