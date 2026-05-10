@@ -34,8 +34,13 @@ class _NumpyIndex:
 
 class RegulationIndex:
     def __init__(self, vectors: np.ndarray, chunks: Sequence[RegulationChunk]):
+        import os
         self._chunks = list(chunks)
         self._faiss = None
+        # Allow disabling faiss (e.g. on Render where the wheel can segfault).
+        if os.getenv("DISABLE_FAISS", "").lower() in ("1", "true", "yes"):
+            self._numpy = _NumpyIndex(vectors, self._chunks)
+            return
         try:
             import faiss  # type: ignore
 

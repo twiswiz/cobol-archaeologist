@@ -8,5 +8,7 @@ services:
         value: /app/data
       - key: PORT
         value: 8000
+      - key: DISABLE_FAISS
+        value: "1"
     healthCheckPath: /health
     autoDeploy: true
