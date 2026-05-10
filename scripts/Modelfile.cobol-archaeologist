@@ -1,0 +1,22 @@
+# Modelfile for the Phase 9 fine-tuned COBOL-Archaeologist model.
+# Build with: ollama create cobol-archaeologist:v1 -f scripts/Modelfile.cobol-archaeologist
+# Expects ../cobol-archaeologist.q4_k_m.gguf to exist next to this file.
+
+FROM ../cobol-archaeologist.q4_k_m.gguf
+
+# Reuse Qwen2.5 chat template
+TEMPLATE """{{ if .System }}<|im_start|>system
+{{ .System }}<|im_end|>
+{{ end }}{{ if .Prompt }}<|im_start|>user
+{{ .Prompt }}<|im_end|>
+{{ end }}<|im_start|>assistant
+{{ .Response }}<|im_end|>
+"""
+
+PARAMETER stop "<|im_start|>"
+PARAMETER stop "<|im_end|>"
+PARAMETER temperature 0.1
+PARAMETER top_p 0.9
+PARAMETER num_ctx 4096
+
+SYSTEM """You are COBOL-Archaeologist, an analyst that recovers business intent from undocumented COBOL programs running in banks and financial institutions. Always respond with a single JSON object — no prose, no markdown fences."""

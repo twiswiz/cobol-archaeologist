@@ -142,6 +142,21 @@ def cmd_eval(args: argparse.Namespace) -> None:
     print(json.dumps(summary, indent=2))
 
 
+def cmd_finetune_build(args: argparse.Namespace) -> None:
+    from .finetune.dataset import build_corpus
+
+    summary = build_corpus(
+        envelopes=Path(args.envelopes),
+        logic_blocks=Path(args.logic_blocks),
+        out_path=Path(args.out),
+        chunks_path=Path(args.chunks) if args.chunks else None,
+        include_static=not args.no_static,
+        include_rag=not args.no_rag,
+        quality_filter=not args.no_filter,
+    )
+    print(json.dumps(summary, indent=2))
+
+
 def cmd_compare_baselines(args: argparse.Namespace) -> None:
     """Run eval in 4 modes (echo / code-only / +static / +static+rag) and emit a Markdown table."""
     from .eval.run import run_eval
@@ -260,6 +275,19 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--index-dir", default=None, help="Path to FAISS regulation index for the +rag row.")
     s.add_argument("--offline", action="store_true", help="Use the hashing embedder when querying the index.")
     s.set_defaults(func=cmd_compare_baselines)
+
+    s = sub.add_parser(
+        "finetune-build",
+        help="Build a chat-format SFT JSONL from infer envelopes + logic blocks.",
+    )
+    s.add_argument("--envelopes", required=True, help="JSONL of envelope records from `infer`.")
+    s.add_argument("--logic-blocks", required=True, help="logic_blocks.jsonl used during inference.")
+    s.add_argument("--chunks", default=None, help="Optional regulation chunks JSONL for the RAG section.")
+    s.add_argument("--out", required=True, help="Output SFT JSONL path.")
+    s.add_argument("--no-static", action="store_true")
+    s.add_argument("--no-rag", action="store_true")
+    s.add_argument("--no-filter", action="store_true", help="Disable quality filtering.")
+    s.set_defaults(func=cmd_finetune_build)
 
     return p
 
