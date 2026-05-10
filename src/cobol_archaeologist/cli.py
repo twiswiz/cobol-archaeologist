@@ -72,9 +72,29 @@ def cmd_infer(args: argparse.Namespace) -> None:
     backend = get_backend(args.backend, **(json.loads(args.backend_args) if args.backend_args else {}))
     index = None
     embedder = None
-    if args.index_dir:
+    use_rag = bool(args.index_dir) and not getattr(args, "no_rag", False)
+    include_static = not getattr(args, "no_static", False)
+    if use_rag:
         index = RegulationIndex.load(Path(args.index_dir))
         embedder = get_embedder(prefer_st=not args.offline)
+
+    # Tag identifies the run mode in the output JSONL
+    tag = getattr(args, "tag", None)
+    if tag is None:
+        bits = ["code"]
+        if include_static:
+            bits.append("static")
+        if use_rag:
+            bits.append("rag")
+        tag = "+".join(bits)
+
+    # Backend label for traceability
+    if args.backend == "ollama":
+        model_label = f"ollama/{(json.loads(args.backend_args).get('model') if args.backend_args else None) or 'qwen2.5-coder:1.5b'}"
+    elif args.backend == "openai":
+        model_label = f"openai/{(json.loads(args.backend_args).get('model') if args.backend_args else None) or 'gpt-4o-mini'}"
+    else:
+        model_label = args.backend
 
     out_path = Path(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -91,13 +111,27 @@ def cmd_infer(args: argparse.Namespace) -> None:
                 qtext = " ".join([block.paragraph] + block.vars_read + block.vars_written + block.conditions)
                 qv = embedder.encode([qtext])[0]
                 retrieved = [h.chunk for h in index.search(qv, k=args.k)]
+            envelope = {
+                "logic_block_id": block.id,
+                "model": model_label,
+                "mode": tag,
+                "retrieved_chunk_ids": [r.id for r in retrieved],
+            }
             try:
-                card = generate_card(block, backend, retrieved=retrieved)
-                out.write(card.model_dump_json() + "\n")
+                card = generate_card(
+                    block,
+                    backend,
+                    retrieved=retrieved,
+                    include_static=include_static,
+                    include_rag=use_rag,
+                )
+                envelope["card"] = card.model_dump()
+                out.write(json.dumps(envelope, ensure_ascii=False) + "\n")
                 n += 1
             except Exception as exc:
-                out.write(json.dumps({"logic_block_id": block.id, "error": str(exc)}) + "\n")
-    print(f"Wrote {n} cards -> {args.out}")
+                envelope["error"] = str(exc)
+                out.write(json.dumps(envelope, ensure_ascii=False) + "\n")
+    print(f"Wrote {n} cards -> {args.out}  (mode={tag}, model={model_label})")
 
 
 def cmd_eval(args: argparse.Namespace) -> None:
@@ -106,6 +140,59 @@ def cmd_eval(args: argparse.Namespace) -> None:
     backend = get_backend(args.backend, **(json.loads(args.backend_args) if args.backend_args else {}))
     summary = run_eval(Path(args.golden), backend=backend, out_dir=Path(args.out_dir))
     print(json.dumps(summary, indent=2))
+
+
+def cmd_compare_baselines(args: argparse.Namespace) -> None:
+    """Run eval in 4 modes (echo / code-only / +static / +static+rag) and emit a Markdown table."""
+    from .eval.run import run_eval
+
+    out_dir = Path(args.out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    backend_kwargs = json.loads(args.backend_args) if args.backend_args else {}
+
+    modes = [
+        ("echo (heuristic)", "echo", False, False),
+        (f"{args.backend} code-only", args.backend, False, False),
+        (f"{args.backend} + static", args.backend, True, False),
+        (f"{args.backend} + static + rag", args.backend, True, True),
+    ]
+
+    rows: list[tuple[str, dict]] = []
+    for label, backend_name, include_static, include_rag in modes:
+        if backend_name == "echo":
+            be = get_backend("echo")
+        else:
+            be = get_backend(backend_name, **backend_kwargs)
+        print(f"--- running: {label} ---")
+        summary = run_eval(
+            Path(args.golden),
+            backend=be,
+            out_dir=out_dir / f"compare_{label.replace(' ', '_').replace('+', 'p').replace('/', '_')}",
+            include_static=include_static,
+            include_rag=include_rag,
+            index_dir=Path(args.index_dir) if args.index_dir else None,
+            offline=args.offline,
+        )
+        rows.append((label, summary))
+
+    # Render Markdown table
+    md_lines = [
+        "# Baseline Comparison",
+        "",
+        f"Golden set: `{args.golden}`  ·  N = {rows[0][1].get('n', '?')}",
+        "",
+        "| Mode | JSON valid | Faithfulness | ROUGE-L (what) | ROUGE-L (why) |",
+        "|---|---:|---:|---:|---:|",
+    ]
+    for label, s in rows:
+        md_lines.append(
+            f"| {label} | {s.get('json_validity', 0):.2f} | {s.get('faithfulness', 0):.3f} | "
+            f"{s.get('rouge_l_what', 0):.3f} | {s.get('rouge_l_why', 0):.3f} |"
+        )
+    md = "\n".join(md_lines) + "\n"
+    (out_dir / "comparison_table.md").write_text(md, encoding="utf-8")
+    print()
+    print(md)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -145,6 +232,9 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("-k", type=int, default=3)
     s.add_argument("--offline", action="store_true")
     s.add_argument("--limit", type=int, default=None, help="Process only the first N blocks.")
+    s.add_argument("--no-static", action="store_true", help="Omit STATIC CONTEXT block from prompt.")
+    s.add_argument("--no-rag", action="store_true", help="Skip RAG retrieval even if --index-dir is set.")
+    s.add_argument("--tag", default=None, help="Free-form tag written into each output record.")
     s.set_defaults(func=cmd_infer)
 
     s = sub.add_parser("eval", help="Evaluate against a golden JSONL file.")
@@ -153,6 +243,23 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--backend", default="echo", choices=["echo", "hf", "openai", "ollama"])
     s.add_argument("--backend-args", default=None)
     s.set_defaults(func=cmd_eval)
+
+    s = sub.add_parser(
+        "compare-baselines",
+        help="Run eval in 4 ablation modes and write reports/comparison_table.md.",
+    )
+    s.add_argument("--golden", required=True)
+    s.add_argument("--out-dir", default="reports")
+    s.add_argument(
+        "--backend",
+        default="ollama",
+        choices=["hf", "openai", "ollama"],
+        help="Real model used for the non-echo rows.",
+    )
+    s.add_argument("--backend-args", default=None)
+    s.add_argument("--index-dir", default=None, help="Path to FAISS regulation index for the +rag row.")
+    s.add_argument("--offline", action="store_true", help="Use the hashing embedder when querying the index.")
+    s.set_defaults(func=cmd_compare_baselines)
 
     return p
 

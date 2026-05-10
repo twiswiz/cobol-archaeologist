@@ -20,8 +20,15 @@ def generate_card(
     backend: LLMBackend,
     retrieved: Optional[list[RegulationChunk]] = None,
     repair_attempts: int = 1,
+    include_static: bool = True,
+    include_rag: bool = True,
 ) -> BusinessIntentCard:
-    prompt = render_prompt(block, retrieved=retrieved)
+    prompt = render_prompt(
+        block,
+        retrieved=retrieved,
+        include_static=include_static,
+        include_rag=include_rag,
+    )
     last_error: Exception | None = None
     for attempt in range(repair_attempts + 1):
         text = backend.generate(prompt if attempt == 0 else prompt + REPAIR_INSTRUCTION)

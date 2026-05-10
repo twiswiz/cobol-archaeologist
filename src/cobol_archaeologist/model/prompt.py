@@ -23,27 +23,34 @@ Hard rules:
 """
 
 
-def render_prompt(block: LogicBlock, retrieved: list[RegulationChunk] | None = None) -> str:
-    ctx = {
-        "paragraph": block.paragraph,
-        "vars_read": block.vars_read,
-        "vars_written": block.vars_written,
-        "conditions": block.conditions,
-        "perform_calls": block.perform_calls,
-        "file_refs": block.file_refs,
-        "copybooks": block.copybooks,
-        "weak_label": block.weak_label,
-        "tags": block.tags,
-    }
-    retrieved = retrieved or []
-    reg_blob = "\n\n".join(
-        f"[{r.id}] source={r.source} page={r.page}\n{r.text}" for r in retrieved
-    ) or "(none)"
+def render_prompt(
+    block: LogicBlock,
+    retrieved: list[RegulationChunk] | None = None,
+    include_static: bool = True,
+    include_rag: bool = True,
+) -> str:
+    parts: list[str] = [SYSTEM_INSTRUCTION, "", f"COBOL CODE:\n{block.code}"]
 
-    return (
-        f"{SYSTEM_INSTRUCTION}\n\n"
-        f"COBOL CODE:\n{block.code}\n"
-        f"STATIC CONTEXT:\n{json.dumps(ctx, ensure_ascii=False)}\n"
-        f"RETRIEVED REGULATIONS:\n{reg_blob}\n"
-        f"OUTPUT JSON:\n"
-    )
+    if include_static:
+        ctx = {
+            "paragraph": block.paragraph,
+            "vars_read": block.vars_read,
+            "vars_written": block.vars_written,
+            "conditions": block.conditions,
+            "perform_calls": block.perform_calls,
+            "file_refs": block.file_refs,
+            "copybooks": block.copybooks,
+            "weak_label": block.weak_label,
+            "tags": block.tags,
+        }
+        parts.append(f"STATIC CONTEXT:\n{json.dumps(ctx, ensure_ascii=False)}")
+
+    if include_rag:
+        retrieved = retrieved or []
+        reg_blob = "\n\n".join(
+            f"[{r.id}] source={r.source} page={r.page}\n{r.text}" for r in retrieved
+        ) or "(none)"
+        parts.append(f"RETRIEVED REGULATIONS:\n{reg_blob}")
+
+    parts.append("OUTPUT JSON:\n")
+    return "\n".join(parts)

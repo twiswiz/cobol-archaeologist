@@ -1,0 +1,8 @@
+# COBOL-Archaeologist Eval Report
+
+- **n**: 5
+- **json_validity**: 1.0
+- **faithfulness**: 0.0
+- **rouge_l_what**: 0.04010025062656642
+- **rouge_l_why**: 0.06
+- **regulation_precision**: None
