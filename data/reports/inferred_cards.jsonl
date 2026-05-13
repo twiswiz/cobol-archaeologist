@@ -1,0 +1,1 @@
+{"logic_block_id":"lb_c885406509","what":"Exit","why":"To terminate the execution of the program.","code_evidence":["GMOOH999"],"regulation_link":null,"regulation_sources":[],"confidence":{"level":"High","justification":"The code snippet contains a simple EXIT statement at the end of the block, which is used to terminate program execution."}}

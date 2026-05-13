@@ -41,7 +41,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Allow any origin so the Vercel frontend can call this
+# Allow any origin so the local frontend (and any other client) can call this
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -241,7 +241,6 @@ def infer_block(block_id: str, req: InferRequest = InferRequest()):
     try:
         card = generate_card(block, backend, retrieved)
     except Exception as e:
-        import traceback
         raise HTTPException(
             status_code=502,
             detail=f"Backend '{req.backend}' failed: {type(e).__name__}: {e}",
@@ -333,6 +332,7 @@ def search_regulations(
         hits = idx.search(query_vec, k=k)
     except Exception as e:
         import traceback
+
         tb = traceback.format_exc()
         raise HTTPException(
             status_code=500,
