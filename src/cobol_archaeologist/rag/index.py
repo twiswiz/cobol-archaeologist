@@ -37,9 +37,9 @@ class RegulationIndex:
         import os
         self._chunks = list(chunks)
         self._faiss = None
-        # faiss-cpu is opt-in: it can segfault on small Linux containers (e.g. Render
-        # free tier) due to AVX/numpy ABI mismatches. With <10k chunks the numpy
-        # fallback is fast enough.
+        # faiss-cpu is opt-in: it can segfault on small Linux containers due to
+        # AVX/numpy ABI mismatches. With <10k chunks the numpy fallback is fast
+        # enough.
         if os.getenv("ENABLE_FAISS", "").lower() not in ("1", "true", "yes"):
             self._numpy = _NumpyIndex(vectors, self._chunks)
             return

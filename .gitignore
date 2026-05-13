@@ -12,4 +12,4 @@ dist/
 data/raw/
 data/generated/
 
-# Keep processed, index, and reports — needed for Docker/Render build
+# Keep processed, index, and reports — needed for Docker build

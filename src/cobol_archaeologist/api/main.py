@@ -98,7 +98,7 @@ def health():
 
 @app.get("/version")
 def version():
-    return {"build": "phase9-faiss-fix", "commit": os.getenv("RENDER_GIT_COMMIT", "unknown")}
+    return {"build": "phase9-faiss-fix", "commit": os.getenv("GIT_COMMIT", "unknown")}
 
 
 # ---------------------------------------------------------------------------
