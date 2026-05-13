@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+import uuid
 from contextlib import asynccontextmanager
 from typing import Optional
 
@@ -10,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from cobol_archaeologist.api.loader import (
+    DATA_DIR,
     INDEX_DIR,
     get_block_by_id,
     get_blocks,
@@ -74,6 +76,13 @@ class StatsResponse(BaseModel):
 
 
 class InferRequest(BaseModel):
+    backend: str = "ollama"
+    model: Optional[str] = None
+
+
+class AnalyseRequest(BaseModel):
+    code: str
+    paragraph: str = "FREEFORM"
     backend: str = "ollama"
     model: Optional[str] = None
 
@@ -240,9 +249,64 @@ def infer_block(block_id: str, req: InferRequest = InferRequest()):
     if card is None:
         raise HTTPException(status_code=500, detail="Model failed to produce a valid card")
 
+    # Persist so the next GET /cards/{block_id} returns the fresh result
+    _inferred = DATA_DIR / "reports" / "inferred_cards.jsonl"
+    _inferred.parent.mkdir(parents=True, exist_ok=True)
+    with _inferred.open("a", encoding="utf-8") as _fh:
+        _fh.write(card.model_dump_json() + "\n")
+
     # Invalidate cards cache so next /cards request reflects this
     get_cards.cache_clear()
     get_cards_by_block_id.cache_clear()
+
+    return card
+
+
+# ---------------------------------------------------------------------------
+# Freeform / ad-hoc analysis
+# ---------------------------------------------------------------------------
+
+@app.post("/analyse", response_model=BusinessIntentCard)
+def analyse_freeform(req: AnalyseRequest):
+    """Generate a Business Intent Card from pasted COBOL code (no block needed)."""
+    block = LogicBlock(
+        id=f"freeform-{uuid.uuid4().hex[:8]}",
+        source_file="freeform",
+        paragraph=req.paragraph or "FREEFORM",
+        code=req.code,
+    )
+
+    from cobol_archaeologist.model.backend import get_backend
+    from cobol_archaeologist.model.runner import generate_card
+    from cobol_archaeologist.rag.embed import get_embedder
+    from cobol_archaeologist.rag.index import RegulationIndex
+
+    kwargs = {}
+    if req.model:
+        kwargs["model"] = req.model
+
+    backend = get_backend(req.backend, **kwargs)
+
+    retrieved = []
+    if INDEX_DIR.exists():
+        try:
+            embedder = get_embedder(prefer_st=False)
+            idx = RegulationIndex.load(INDEX_DIR)
+            query_vec = embedder.encode([req.paragraph])[0]
+            hits = idx.search(query_vec, k=3)
+            retrieved = [h.chunk for h in hits]
+        except Exception:
+            retrieved = []
+
+    try:
+        card = generate_card(block, backend, retrieved)
+    except Exception as e:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Backend '{req.backend}' failed: {type(e).__name__}: {e}",
+        )
+    if card is None:
+        raise HTTPException(status_code=500, detail="Model failed to produce a valid card")
 
     return card
 

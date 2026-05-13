@@ -20,6 +20,7 @@ CARDS_FILES = [
     DATA_DIR / "reports" / "cbsa_cards.jsonl",
     DATA_DIR / "reports" / "carddemo_cards.jsonl",
     DATA_DIR / "reports" / "cards.jsonl",
+    DATA_DIR / "reports" / "inferred_cards.jsonl",
 ]
 INDEX_DIR = DATA_DIR / "index"
 
