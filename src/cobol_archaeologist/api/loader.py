@@ -14,6 +14,7 @@ DATA_DIR = Path(os.getenv("DATA_DIR", "data"))
 BLOCKS_FILES = [
     DATA_DIR / "processed" / "logic_blocks.jsonl",
     DATA_DIR / "processed" / "carddemo_blocks.jsonl",
+    DATA_DIR / "generated" / "generated_cobol_logic_blocks.jsonl",
 ]
 CARDS_FILES = [
     DATA_DIR / "reports" / "cbsa_cards.jsonl",
