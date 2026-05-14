@@ -1,7 +1,8 @@
 # dev.ps1 — start API + web frontend together
 # Run from the cobol-archaeologist repo root.
 # Pre-requisites (once):
-#   pip install -e ".[api,rag]"
+#   pip install uv
+#   uv sync
 #   cd ..\cobol-archaeologist-web ; npm install
 #   ollama pull qwen2.5-coder:1.5b
 
@@ -15,7 +16,7 @@ if (-not (Test-Path $webDir)) {
 
 $api = Start-Process powershell `
     -ArgumentList "-NoExit", "-Command",
-        "cd '$apiDir'; uvicorn cobol_archaeologist.api.main:app --reload --port 8000" `
+        "cd '$apiDir'; uv run uvicorn cobol_archaeologist.api.main:app --reload --port 8000" `
     -PassThru
 
 Write-Host "API started (PID $($api.Id)) -> http://localhost:8000"

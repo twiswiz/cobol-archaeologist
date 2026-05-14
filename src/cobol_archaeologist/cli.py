@@ -254,17 +254,17 @@ def build_parser() -> argparse.ArgumentParser:
 
     s = sub.add_parser("eval", help="Evaluate against a golden JSONL file.")
     s.add_argument("--golden", required=True)
-    s.add_argument("--out-dir", default="reports")
+    s.add_argument("--out-dir", default="results")
     s.add_argument("--backend", default="echo", choices=["echo", "hf", "openai", "ollama"])
     s.add_argument("--backend-args", default=None)
     s.set_defaults(func=cmd_eval)
 
     s = sub.add_parser(
         "compare-baselines",
-        help="Run eval in 4 ablation modes and write reports/comparison_table.md.",
+        help="Run eval in 4 ablation modes and write results/comparison_table.md.",
     )
     s.add_argument("--golden", required=True)
-    s.add_argument("--out-dir", default="reports")
+    s.add_argument("--out-dir", default="results")
     s.add_argument(
         "--backend",
         default="ollama",

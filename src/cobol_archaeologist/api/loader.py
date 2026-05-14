@@ -17,10 +17,10 @@ BLOCKS_FILES = [
     DATA_DIR / "generated" / "generated_cobol_logic_blocks.jsonl",
 ]
 CARDS_FILES = [
-    DATA_DIR / "reports" / "cbsa_cards.jsonl",
-    DATA_DIR / "reports" / "carddemo_cards.jsonl",
-    DATA_DIR / "reports" / "cards.jsonl",
-    DATA_DIR / "reports" / "inferred_cards.jsonl",
+    DATA_DIR / "results" / "cbsa_cards.jsonl",
+    DATA_DIR / "results" / "carddemo_cards.jsonl",
+    DATA_DIR / "results" / "cards.jsonl",
+    DATA_DIR / "results" / "inferred_cards.jsonl",
 ]
 INDEX_DIR = DATA_DIR / "index"
 
@@ -29,8 +29,8 @@ def _load_jsonl(paths: list[Path], model: type) -> list:
     records = []
     for path in paths:
         if not path.exists():
-            # also check reports/ at top level
-            alt = Path("reports") / path.name
+            # also check results/ at top level
+            alt = Path("results") / path.name
             if alt.exists():
                 path = alt
             else:

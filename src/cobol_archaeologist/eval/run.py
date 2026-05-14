@@ -31,7 +31,7 @@ def run_eval(
     k: int = 3,
 ) -> dict:
     backend = backend or get_backend("echo")
-    out_dir = out_dir or Path("reports")
+    out_dir = out_dir or Path("results")
     out_dir.mkdir(parents=True, exist_ok=True)
 
     index, embedder = (None, None)

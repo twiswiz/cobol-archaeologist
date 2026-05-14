@@ -1,8 +1,4 @@
-"""Robust paragraph extractor.
-
-Lark grammars over real-world COBOL are flaky, so we provide a regex-based
-paragraph splitter that operates on cleaned source. This always succeeds.
-"""
+"""Regex-based paragraph extractor for cleaned COBOL source."""
 from __future__ import annotations
 
 import re

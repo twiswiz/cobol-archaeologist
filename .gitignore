@@ -11,5 +11,7 @@ dist/
 # Data artifacts
 data/raw/
 data/generated/
+# Generated pipeline outputs (not needed for Docker)
+outputs/
 
-# Keep processed, index, and reports — needed for Docker build
+# Keep data/processed, data/index, and reports — needed for Docker build

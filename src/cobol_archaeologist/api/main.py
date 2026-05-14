@@ -249,7 +249,7 @@ def infer_block(block_id: str, req: InferRequest = InferRequest()):
         raise HTTPException(status_code=500, detail="Model failed to produce a valid card")
 
     # Persist so the next GET /cards/{block_id} returns the fresh result
-    _inferred = DATA_DIR / "reports" / "inferred_cards.jsonl"
+    _inferred = DATA_DIR / "results" / "inferred_cards.jsonl"
     _inferred.parent.mkdir(parents=True, exist_ok=True)
     with _inferred.open("a", encoding="utf-8") as _fh:
         _fh.write(card.model_dump_json() + "\n")

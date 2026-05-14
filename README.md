@@ -28,11 +28,13 @@ Eval harness (faithfulness, JSON validity, ROUGE-L, regulation precision)
 ## Install
 
 ```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -e .[dev]
-# optional extras
-pip install -e .[rag,model]
+pip install uv          # once, if you don't have it
+uv sync                 # creates .venv and installs all base + dev + api deps
+```
+
+Optional extras (RAG embeddings, HuggingFace models):
+```powershell
+uv sync --extra rag --extra model
 ```
 
 ## Data
@@ -48,31 +50,31 @@ See [data/README.md](data/README.md) and [data/manifest.json](data/manifest.json
 
 ```powershell
 # 1. Discover COBOL files in an extracted dataset
-python -m cobol_archaeologist.cli ingest `
+uv run python -m cobol_archaeologist.cli ingest `
     --root data/raw/ibm-cics-banking-sample-cbsa `
     --out data/processed/sources.csv
 
 # 2. Segment + weakly label into logic blocks
-python -m cobol_archaeologist.cli segment `
+uv run python -m cobol_archaeologist.cli segment `
     --root data/raw/ibm-cics-banking-sample-cbsa `
     --out data/processed/logic_blocks.jsonl --label
 
 # 3. Build the regulation index (use --offline for the hashing embedder)
-python -m cobol_archaeologist.cli index-regulations `
+uv run python -m cobol_archaeologist.cli index-regulations `
     --pdf data/raw/rbi-kyc-master-direction/RBI-Master-Direction-KYC.pdf `
           data/raw/basel-iii-framework/basel-iii-bcbs189.pdf `
     --out-dir data/index --offline
 
 # 4. Run inference (default: deterministic EchoBackend; switch with --backend)
-python -m cobol_archaeologist.cli infer `
+uv run python -m cobol_archaeologist.cli infer `
     --logic-blocks data/processed/logic_blocks.jsonl `
     --index-dir data/index `
-    --out reports/cards.jsonl --backend echo
+    --out results/cards.jsonl --backend echo
 
 # 5. Evaluate against the golden set
-python -m cobol_archaeologist.cli eval `
+uv run python -m cobol_archaeologist.cli eval `
     --golden data/generated/golden_eval.jsonl `
-    --out-dir reports
+    --out-dir results
 ```
 
 ## LLM backends
@@ -87,10 +89,16 @@ Switch via `--backend {echo|hf|openai|ollama}`. Pass JSON kwargs with `--backend
 
 `OPENAI_API_KEY` / `OPENAI_BASE_URL` and `OLLAMA_HOST` are honored.
 
+## API server
+
+```powershell
+uv run uvicorn cobol_archaeologist.api.main:app --reload --port 8000
+```
+
 ## Tests
 
 ```powershell
-pytest
+uv run pytest
 ```
 
 ## Layout
