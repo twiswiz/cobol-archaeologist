@@ -78,12 +78,11 @@ def _is_quality(card: BusinessIntentCard) -> bool:
     """Filter obviously bad cards out of the training set."""
     what = (card.what or "").strip()
     why = (card.why or "").strip()
-    if len(what) < 8 or len(why) < 8:
+    if len(what) < 5 or len(why) < 5:
         return False
     if "Performs business logic over the listed COBOL variables" in what:
-        # Heuristic placeholder from the echo backend leaking through.
         return False
-    if not card.code_evidence:
+    if what.lower() == "unknown" or why.lower() == "unknown":
         return False
     return True
 

@@ -54,17 +54,17 @@ MERGED_DIR   = ROOT / "outputs/merged_model"
 
 # A100 training config (BF16, no quantisation)
 TRAIN_CFG = dict(
-    num_train_epochs        = 5,
+    num_train_epochs        = 10,
     per_device_train_batch_size = 8,
     gradient_accumulation_steps = 2,
     learning_rate           = 2e-4,
     lr_scheduler_type       = "cosine",
-    warmup_ratio            = 0.05,
+    warmup_steps            = 10,
     logging_steps           = 5,
     save_strategy           = "epoch",
     bf16                    = True,
     fp16                    = False,
-    max_seq_length          = 2048,
+    max_length              = 2048,
     packing                 = True,
     dataset_text_field      = "text",
     report_to               = "none",
@@ -94,7 +94,7 @@ def stage_generate(args):
     print(f"[stage 1] Loading model {MODEL_ID} in BF16 ...")
     tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
     model = AutoModelForCausalLM.from_pretrained(
-        MODEL_ID, torch_dtype=torch.bfloat16, device_map="auto"
+        MODEL_ID, dtype=torch.bfloat16, device_map="auto"
     )
     model.eval()
 
@@ -206,7 +206,7 @@ def stage_train(args):
         tokenizer.pad_token = tokenizer.eos_token
 
     model = AutoModelForCausalLM.from_pretrained(
-        MODEL_ID, torch_dtype=torch.bfloat16, device_map="auto"
+        MODEL_ID, dtype=torch.bfloat16, device_map="auto"
     )
     model.config.use_cache = False
 
@@ -226,7 +226,7 @@ def stage_train(args):
     LORA_DIR.mkdir(parents=True, exist_ok=True)
     cfg = SFTConfig(output_dir=str(LORA_DIR), **TRAIN_CFG)
 
-    trainer = SFTTrainer(model=model, args=cfg, train_dataset=ds_text, tokenizer=tokenizer)
+    trainer = SFTTrainer(model=model, args=cfg, train_dataset=ds_text, processing_class=tokenizer)
     trainer.train()
     trainer.model.save_pretrained(str(LORA_DIR))
     tokenizer.save_pretrained(str(LORA_DIR))
@@ -248,7 +248,7 @@ def stage_merge(args):
     print(f"[stage 4] Loading base model {MODEL_ID} in BF16 ...")
     tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
     base = AutoModelForCausalLM.from_pretrained(
-        MODEL_ID, torch_dtype=torch.bfloat16, device_map="auto"
+        MODEL_ID, dtype=torch.bfloat16, device_map="auto"
     )
 
     print(f"[stage 4] Merging adapter from {LORA_DIR} ...")

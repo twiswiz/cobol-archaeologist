@@ -9,22 +9,22 @@ from pydantic import ValidationError
 from ..schemas import BusinessIntentCard
 
 
-_JSON_BLOCK = re.compile(r"\{.*\}", re.S)
-
-
 class CardParseError(ValueError):
     """Raised when the model output cannot be parsed as a Business Intent Card."""
 
 
 def _extract_json(text: str) -> str:
     text = text.strip()
-    if text.startswith("```"):
-        text = re.sub(r"^```[a-zA-Z]*\n?", "", text)
-        text = re.sub(r"\n?```$", "", text)
-    m = _JSON_BLOCK.search(text)
-    if not m:
-        raise CardParseError("No JSON object found in model output.")
-    return m.group(0)
+    text = re.sub(r"```[a-zA-Z]*\n?", "", text).strip()
+    decoder = json.JSONDecoder()
+    for i, ch in enumerate(text):
+        if ch == "{":
+            try:
+                obj, _ = decoder.raw_decode(text, i)
+                return json.dumps(obj)
+            except json.JSONDecodeError:
+                continue
+    raise CardParseError("No valid JSON object found in model output.")
 
 
 def parse_card(text: str, logic_block_id: str | None = None) -> BusinessIntentCard:

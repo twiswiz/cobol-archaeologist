@@ -20,6 +20,9 @@ Hard rules:
 - Output JSON only. No prose, no markdown fences.
 - Every variable mentioned in code_evidence MUST appear in the static context.
 - Set regulation_link to null unless a retrieved snippet is clearly relevant.
+
+Example output:
+{"what":"Validate account balance before withdrawal","why":"Prevents overdraft in compliance with RBI guidelines","code_evidence":["ACCT-BALANCE","IF ACCT-BALANCE < WS-AMOUNT"],"regulation_link":null,"regulation_sources":[],"confidence":{"level":"High","justification":"Clear balance check before debit operation"}}
 """
 
 
