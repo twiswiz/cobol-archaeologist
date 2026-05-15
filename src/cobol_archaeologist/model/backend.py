@@ -5,6 +5,7 @@ Backends:
 - ``HFBackend``: local HuggingFace ``transformers`` model.
 - ``OpenAIBackend``: OpenAI-compatible HTTP API (works with OpenAI, vLLM, LM Studio).
 - ``OllamaBackend``: local Ollama daemon.
+- ``LlamaCppBackend``: local GGUF model via llama-cpp-python (CPU/GPU).
 
 All backends share the same ``generate(prompt) -> str`` contract.
 """
@@ -159,6 +160,64 @@ class OllamaBackend:
         return r.json().get("response", "")
 
 
+class LlamaCppBackend:
+    """Local GGUF model backend via llama-cpp-python.
+
+    Loads the model once and keeps it in memory. Supports both chat and
+    raw-completion modes.  Pass ``n_gpu_layers=-1`` to offload all layers to GPU
+    when CUDA is available.
+    """
+
+    def __init__(
+        self,
+        model_path: str | None = None,
+        n_ctx: int = 4096,
+        n_gpu_layers: int = 0,
+        temperature: float = 0.2,
+        max_tokens: int = 512,
+    ) -> None:
+        from llama_cpp import Llama  # type: ignore
+
+        if model_path is None:
+            model_path = os.environ.get(
+                "LLAMA_MODEL_PATH",
+                str(
+                    os.path.join(
+                        os.path.dirname(__file__),
+                        "../../../../outputs/cobol-archaeologist.f16.gguf",
+                    )
+                ),
+            )
+        self.llm = Llama(
+            model_path=model_path,
+            n_ctx=n_ctx,
+            n_gpu_layers=n_gpu_layers,
+            verbose=False,
+        )
+        self.temperature = temperature
+        self.max_tokens = max_tokens
+
+    def generate(self, prompt: str) -> str:
+        result = self.llm(
+            prompt,
+            max_tokens=self.max_tokens,
+            temperature=self.temperature,
+            stop=["</s>", "<|im_end|>"],
+            echo=False,
+        )
+        return result["choices"][0]["text"].strip()
+
+    def chat(self, messages: list[dict], max_tokens: int | None = None) -> str:
+        """OpenAI-style chat completion."""
+        result = self.llm.create_chat_completion(
+            messages=messages,
+            max_tokens=max_tokens or self.max_tokens,
+            temperature=self.temperature,
+            stop=["</s>", "<|im_end|>"],
+        )
+        return result["choices"][0]["message"]["content"].strip()
+
+
 def get_backend(name: str = "echo", **kwargs) -> LLMBackend:
     name = name.lower()
     if name == "echo":
@@ -169,4 +228,6 @@ def get_backend(name: str = "echo", **kwargs) -> LLMBackend:
         return OpenAIBackend(**kwargs)
     if name == "ollama":
         return OllamaBackend(**kwargs)
+    if name in {"llama", "llama-cpp", "gguf"}:
+        return LlamaCppBackend(**kwargs)
     raise ValueError(f"Unknown backend: {name}")

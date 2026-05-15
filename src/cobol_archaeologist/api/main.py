@@ -1,6 +1,7 @@
 """FastAPI application — COBOL Archaeologist REST API."""
 from __future__ import annotations
 
+import asyncio
 import os
 import uuid
 from contextlib import asynccontextmanager
@@ -8,6 +9,7 @@ from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from cobol_archaeologist.api.loader import (
@@ -25,9 +27,38 @@ from cobol_archaeologist.schemas import BusinessIntentCard, LogicBlock
 # App
 # ---------------------------------------------------------------------------
 
+_DEFAULT_MODEL_PATH = os.environ.get(
+    "LLAMA_MODEL_PATH",
+    str(
+        (
+            __import__("pathlib").Path(__file__).parents[3]
+            / "outputs"
+            / "cobol-archaeologist.f16.gguf"
+        ).resolve()
+    ),
+)
+
+# Loaded once at startup; None if the model file is missing.
+_llm: Optional[object] = None
+
+
+def _load_llm():
+    global _llm
+    if not __import__("pathlib").Path(_DEFAULT_MODEL_PATH).exists():
+        return
+    from cobol_archaeologist.model.backend import LlamaCppBackend
+    _llm = LlamaCppBackend(
+        model_path=_DEFAULT_MODEL_PATH,
+        n_ctx=int(os.environ.get("LLAMA_N_CTX", "4096")),
+        n_gpu_layers=int(os.environ.get("LLAMA_N_GPU_LAYERS", "0")),
+    )
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Pre-warm caches on startup
+    # Load GGUF model in a thread so the event loop isn't blocked
+    await asyncio.get_event_loop().run_in_executor(None, _load_llm)
+    # Pre-warm data caches
     get_blocks()
     get_cards()
     get_cards_by_block_id()
@@ -94,6 +125,27 @@ class RegSearchHit(BaseModel):
     page: Optional[int]
     text: str
     score: float
+
+
+class ChatMessage(BaseModel):
+    role: str  # "system" | "user" | "assistant"
+    content: str
+
+
+class ChatRequest(BaseModel):
+    messages: list[ChatMessage]
+    max_tokens: int = 512
+    stream: bool = False
+
+
+class ChatResponse(BaseModel):
+    response: str
+
+
+class PromptRequest(BaseModel):
+    prompt: str
+    max_tokens: int = 512
+    stream: bool = False
 
 
 # ---------------------------------------------------------------------------
@@ -308,6 +360,90 @@ def analyse_freeform(req: AnalyseRequest):
         raise HTTPException(status_code=500, detail="Model failed to produce a valid card")
 
     return card
+
+
+# ---------------------------------------------------------------------------
+# Direct model chat (f16 GGUF)
+# ---------------------------------------------------------------------------
+
+def _require_llm():
+    if _llm is None:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                f"GGUF model not loaded. Check that the file exists at "
+                f"{_DEFAULT_MODEL_PATH} and the server started without errors."
+            ),
+        )
+    return _llm
+
+
+@app.get("/model/status")
+def model_status():
+    """Return whether the local GGUF model is loaded and ready."""
+    return {"loaded": _llm is not None, "path": _DEFAULT_MODEL_PATH}
+
+
+@app.post("/chat", response_model=ChatResponse)
+def chat(req: ChatRequest):
+    """Send a list of messages to the local GGUF model and get a reply.
+
+    If ``stream`` is true the response is plain text/event-stream SSE,
+    otherwise a JSON ``{"response": "..."}`` object is returned.
+    """
+    llm = _require_llm()
+    messages = [m.model_dump() for m in req.messages]
+
+    if req.stream:
+        def _sse():
+            stream = llm.llm.create_chat_completion(
+                messages=messages,
+                max_tokens=req.max_tokens,
+                temperature=llm.temperature,
+                stream=True,
+            )
+            for chunk in stream:
+                delta = chunk["choices"][0]["delta"].get("content", "")
+                if delta:
+                    yield f"data: {delta}\n\n"
+            yield "data: [DONE]\n\n"
+
+        return StreamingResponse(_sse(), media_type="text/event-stream")
+
+    response = llm.chat(messages, max_tokens=req.max_tokens)
+    return ChatResponse(response=response)
+
+
+@app.post("/prompt", response_model=ChatResponse)
+def prompt(req: PromptRequest):
+    """Shorthand: send a single user prompt string, get a reply.
+
+    Wraps the prompt in a ``[{"role": "user", "content": ...}]`` message list
+    and calls the same underlying model as ``/chat``.
+
+    If ``stream`` is true the response is plain text/event-stream SSE.
+    """
+    llm = _require_llm()
+    messages = [{"role": "user", "content": req.prompt}]
+
+    if req.stream:
+        def _sse():
+            stream = llm.llm.create_chat_completion(
+                messages=messages,
+                max_tokens=req.max_tokens,
+                temperature=llm.temperature,
+                stream=True,
+            )
+            for chunk in stream:
+                delta = chunk["choices"][0]["delta"].get("content", "")
+                if delta:
+                    yield f"data: {delta}\n\n"
+            yield "data: [DONE]\n\n"
+
+        return StreamingResponse(_sse(), media_type="text/event-stream")
+
+    response = llm.chat(messages, max_tokens=req.max_tokens)
+    return ChatResponse(response=response)
 
 
 # ---------------------------------------------------------------------------
