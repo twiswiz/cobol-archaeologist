@@ -15,3 +15,4 @@ data/generated/
 outputs/
 
 # Keep data/processed, data/index, and reports — needed for Docker build
+llama.cpp/
