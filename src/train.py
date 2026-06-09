@@ -94,14 +94,17 @@ def stage_generate(args):
     print(f"[stage 1] Loading model {MODEL_ID} in BF16 ...")
     tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
     model = AutoModelForCausalLM.from_pretrained(
-        MODEL_ID, dtype=torch.bfloat16, device_map="auto"
+        MODEL_ID, torch_dtype=torch.bfloat16, device_map="auto"
     )
     model.eval()
 
-    # Load RAG index if available
+    # Load RAG index + embedder if available
     reg_index = None
+    reg_embedder = None
     try:
+        from cobol_archaeologist.rag.embed import get_embedder
         reg_index = RegulationIndex.load(INDEX_DIR)
+        reg_embedder = get_embedder(prefer_st=False)
         print(f"[stage 1] Loaded regulation index from {INDEX_DIR}")
     except Exception:
         print("[stage 1] No regulation index found — skipping RAG context")
@@ -120,9 +123,11 @@ def stage_generate(args):
         for i, block in enumerate(blocks):
             retrieved = []
             chunk_ids = []
-            if reg_index is not None:
+            if reg_index is not None and reg_embedder is not None:
                 try:
-                    hits = reg_index.search(block.code, top_k=3)
+                    query_text = " ".join([block.paragraph] + block.vars_read + block.vars_written)
+                    query_vec = reg_embedder.encode([query_text])[0]
+                    hits = reg_index.search(query_vec, k=3)
                     retrieved = [h.chunk for h in hits]
                     chunk_ids = [h.chunk.id for h in hits]
                 except Exception:
@@ -206,7 +211,7 @@ def stage_train(args):
         tokenizer.pad_token = tokenizer.eos_token
 
     model = AutoModelForCausalLM.from_pretrained(
-        MODEL_ID, dtype=torch.bfloat16, device_map="auto"
+        MODEL_ID, torch_dtype=torch.bfloat16, device_map="auto"
     )
     model.config.use_cache = False
 
@@ -248,7 +253,7 @@ def stage_merge(args):
     print(f"[stage 4] Loading base model {MODEL_ID} in BF16 ...")
     tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
     base = AutoModelForCausalLM.from_pretrained(
-        MODEL_ID, dtype=torch.bfloat16, device_map="auto"
+        MODEL_ID, torch_dtype=torch.bfloat16, device_map="auto"
     )
 
     print(f"[stage 4] Merging adapter from {LORA_DIR} ...")

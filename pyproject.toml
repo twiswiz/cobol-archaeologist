@@ -14,8 +14,6 @@ dependencies = [
     "pypdf>=4.0",
     "numpy>=1.26",
     "pandas>=2.1",
-    "accelerate>=1.13.0",
-    "llama-cpp-python>=0.3.23",
 ]
 
 [project.optional-dependencies]
@@ -26,11 +24,9 @@ rag = [
 model = [
     "transformers>=4.40",
     "torch>=2.2",
+    "accelerate>=1.13.0",
+    "llama-cpp-python>=0.3.23",
     "requests>=2.31",
-]
-api = [
-    "fastapi>=0.111",
-    "uvicorn[standard]>=0.29",
 ]
 dev = [
     "pytest>=8.0",

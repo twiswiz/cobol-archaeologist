@@ -1,1 +1,1 @@
-"""Phase 9 — fine-tuning helpers (data prep, prompt formatting, evaluation glue)."""
+"""Fine-tuning helpers: SFT corpus builder and prompt formatting."""
